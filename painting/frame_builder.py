@@ -1,6 +1,10 @@
 """
 a class to build a frame for a painting
 """
+import io
+
+import cairosvg
+import svgwrite
 from matplotlib import pyplot as plt
 
 from painting.dataclasses.coordinate import Coordinate
@@ -12,6 +16,7 @@ from painting.dataclasses.frame_size import FrameSize
 from painting.dataclasses.painting_information import PaintingInformation
 from painting.dataclasses.unit_cm_value import UnitCm
 from painting.enums.frame_coordinate import FrameCoordinate
+from painting.mathematics.units import cm_to_in
 
 
 class FrameBuilder(object):
@@ -224,32 +229,74 @@ class FrameBuilder(object):
         parts_list = FramePartList(
             [
                 FramePart(
-                    inner_length_cm=UnitCm(bottom_id_cm),
-                    outer_length_cm=UnitCm(bottom_od_cm),
-                    inlay_width_cm=UnitCm(bottom_inlay_cm),
-                    coverage_width_cm=UnitCm(bottom_coverage_cm)
+                    inner_length=UnitCm(bottom_id_cm),
+                    outer_length=UnitCm(bottom_od_cm),
+                    inlay_width=UnitCm(bottom_inlay_cm),
+                    coverage_width=UnitCm(bottom_coverage_cm)
                 ),
                 FramePart(
-                    inner_length_cm=UnitCm(right_id_cm),
-                    outer_length_cm=UnitCm(right_od_cm),
-                    inlay_width_cm=UnitCm(right_inlay_cm),
-                    coverage_width_cm=UnitCm(right_coverage_cm)
+                    inner_length=UnitCm(right_id_cm),
+                    outer_length=UnitCm(right_od_cm),
+                    inlay_width=UnitCm(right_inlay_cm),
+                    coverage_width=UnitCm(right_coverage_cm)
                 ),
                 FramePart(
-                    inner_length_cm=UnitCm(top_id_cm),
-                    outer_length_cm=UnitCm(top_od_cm),
-                    inlay_width_cm=UnitCm(top_inlay_cm),
-                    coverage_width_cm=UnitCm(top_coverage_cm)
+                    inner_length=UnitCm(top_id_cm),
+                    outer_length=UnitCm(top_od_cm),
+                    inlay_width=UnitCm(top_inlay_cm),
+                    coverage_width=UnitCm(top_coverage_cm)
                 ),
                 FramePart(
-                    inner_length_cm=UnitCm(left_id_cm),
-                    outer_length_cm=UnitCm(left_od_cm),
-                    inlay_width_cm=UnitCm(left_inlay_cm),
-                    coverage_width_cm=UnitCm(left_coverage_cm)
+                    inner_length=UnitCm(left_id_cm),
+                    outer_length=UnitCm(left_od_cm),
+                    inlay_width=UnitCm(left_inlay_cm),
+                    coverage_width=UnitCm(left_coverage_cm)
                 )
             ]
         )
         return parts_list
+
+    def draw_schematic(
+            self,
+            at: Coordinate = Coordinate(x=0, y=0),
+    ):
+        """
+        Draw a schematic of the frame layout
+        :param at: the coordinate to draw the schematic at
+        :return: 
+        """
+
+        frame_to_plot = self.calculate_frame_layout(at=at)
+        parts = self.calculate_build_dimensions()
+
+        exterior_coordinates = list(zip(
+            [cm_to_in(v) for v in frame_to_plot.frame_exterior_boundary.xs],
+            [cm_to_in(v) for v in frame_to_plot.frame_exterior_boundary.ys]
+        ))
+
+        interior_coordinates = list(zip(
+            [cm_to_in(v) for v in frame_to_plot.painting_overlap_boundary.xs],
+            [cm_to_in(v) for v in frame_to_plot.painting_overlap_boundary.ys]
+        ))
+
+        bottom_vertex = [
+            exterior_coordinates[FrameCoordinate.BOTTOM_LEFT],
+            exterior_coordinates[FrameCoordinate.BOTTOM_RIGHT],
+            interior_coordinates[FrameCoordinate.BOTTOM_RIGHT],
+            interior_coordinates[FrameCoordinate.BOTTOM_LEFT]
+        ]
+
+        dwg = svgwrite.Drawing(profile='tiny', size=("8.5in", "11in"))
+        dwg.attribs['viewBox'] = "0 0 8.5 11"
+
+        dwg.add(
+            dwg.polygon(bottom_vertex, fill='lightblue', stroke='black', stroke_width=.1)
+        )
+        svg_file = io.StringIO()
+        dwg.write(svg_file)
+        svg_file.seek(0)
+
+        cairosvg.svg2png(file_obj=svg_file, write_to="testd.png", dpi=300)
 
     def plot(
             self,

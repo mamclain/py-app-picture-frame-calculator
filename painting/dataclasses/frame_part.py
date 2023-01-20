@@ -12,12 +12,12 @@ class FramePart:
     """
     a part of the frame to be built
     Attributes:
-        inner_length_cm: the length of the part inside the frame in cm
-        outer_length_cm: the length of the part outside the frame in cm
-        inlay_width_cm: the width of the inlay in cm
-        coverage_width_cm: the width of the coverage from painting min to inlay width in cm
+        inner_length: the length of the part inside the frame in cm
+        outer_length: the length of the part outside the frame in cm
+        inlay_width: the width of the inlay in cm
+        coverage_width: the width of the coverage from painting min to inlay width in cm
     """
-    inner_length_cm: UnitCm
-    outer_length_cm: UnitCm
-    inlay_width_cm: UnitCm
-    coverage_width_cm: UnitCm
+    inner_length: UnitCm
+    outer_length: UnitCm
+    inlay_width: UnitCm
+    coverage_width: UnitCm

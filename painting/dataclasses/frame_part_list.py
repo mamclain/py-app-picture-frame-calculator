@@ -16,3 +16,10 @@ class FramePartList:
         parts: a list of frame parts
     """
     parts: List[FramePart]
+
+    def __getitem__(self, item):
+        """ Get a part from the list
+        :param item: the index of the part to get
+        :return: the part
+        """
+        return self.parts[item]
