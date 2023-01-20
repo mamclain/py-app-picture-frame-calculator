@@ -6,13 +6,12 @@ from matplotlib import pyplot as plt
 from painting.dataclasses.coordinate import Coordinate
 from painting.dataclasses.coordinate_list import CoordinateList
 from painting.dataclasses.frame_layout import FrameLayout
+from painting.dataclasses.frame_part import FramePart
+from painting.dataclasses.frame_part_list import FramePartList
 from painting.dataclasses.frame_size import FrameSize
 from painting.dataclasses.painting_information import PaintingInformation
+from painting.dataclasses.unit_cm_value import UnitCm
 from painting.enums.frame_coordinate import FrameCoordinate
-from painting.mathematics.units import (
-    cm_to_in,
-    in_to_tape_measure
-)
 
 
 class FrameBuilder(object):
@@ -182,10 +181,10 @@ class FrameBuilder(object):
             frame_exterior_boundary=exterior_edge
         )
 
-    def calculate_build_dimensions(self):
+    def calculate_build_dimensions(self) -> FramePartList:
         """ calculate the build dimensions for the frame
 
-        :return:
+        :return: a list of frame parts
         """
 
         # calculate the frame layout
@@ -209,17 +208,48 @@ class FrameBuilder(object):
         top_od_cm = outer_frame[FrameCoordinate.TOP_RIGHT].distance(outer_frame[FrameCoordinate.TOP_LEFT])
         left_od_cm = outer_frame[FrameCoordinate.TOP_LEFT].distance(outer_frame[FrameCoordinate.BOTTOM_LEFT])
 
-        # cast the inner build dimensions to inches
-        bottom_id_in = cm_to_in(bottom_id_cm)
-        right_id_in = cm_to_in(right_id_cm)
-        top_id_in = cm_to_in(top_id_cm)
-        left_id_in = cm_to_in(left_id_cm)
+        # calculate the inlay build dimensions
+        bottom_inlay_cm = inner_frame[FrameCoordinate.BOTTOM_LEFT].y_delta(inlay_frame[FrameCoordinate.BOTTOM_RIGHT])
+        right_inlay_cm = inner_frame[FrameCoordinate.BOTTOM_RIGHT].x_delta(inlay_frame[FrameCoordinate.TOP_RIGHT])
+        top_inlay_cm = inner_frame[FrameCoordinate.TOP_RIGHT].y_delta(inlay_frame[FrameCoordinate.TOP_LEFT])
+        left_inlay_cm = inner_frame[FrameCoordinate.TOP_LEFT].x_delta(inlay_frame[FrameCoordinate.BOTTOM_LEFT])
 
-        # cast the outer build dimensions to inches
-        bottom_od_in = in_to_tape_measure(cm_to_in(bottom_od_cm))
-        right_od_in = in_to_tape_measure(cm_to_in(right_od_cm))
-        top_od_in = in_to_tape_measure(cm_to_in(top_od_cm))
-        left_od_in = in_to_tape_measure(cm_to_in(left_od_cm))
+        # calculate the delta inlay build dimensions
+        bottom_coverage_cm = inner_frame[FrameCoordinate.BOTTOM_LEFT].y_delta(delta_inlay[FrameCoordinate.BOTTOM_RIGHT])
+        right_coverage_cm = inner_frame[FrameCoordinate.BOTTOM_RIGHT].x_delta(delta_inlay[FrameCoordinate.TOP_RIGHT])
+        top_coverage_cm = inner_frame[FrameCoordinate.TOP_RIGHT].y_delta(delta_inlay[FrameCoordinate.TOP_LEFT])
+        left_coverage_cm = inner_frame[FrameCoordinate.TOP_LEFT].x_delta(delta_inlay[FrameCoordinate.BOTTOM_LEFT])
+
+        # build the frame part list
+        parts_list = FramePartList(
+            [
+                FramePart(
+                    inner_length_cm=UnitCm(bottom_id_cm),
+                    outer_length_cm=UnitCm(bottom_od_cm),
+                    inlay_width_cm=UnitCm(bottom_inlay_cm),
+                    coverage_width_cm=UnitCm(bottom_coverage_cm)
+                ),
+                FramePart(
+                    inner_length_cm=UnitCm(right_id_cm),
+                    outer_length_cm=UnitCm(right_od_cm),
+                    inlay_width_cm=UnitCm(right_inlay_cm),
+                    coverage_width_cm=UnitCm(right_coverage_cm)
+                ),
+                FramePart(
+                    inner_length_cm=UnitCm(top_id_cm),
+                    outer_length_cm=UnitCm(top_od_cm),
+                    inlay_width_cm=UnitCm(top_inlay_cm),
+                    coverage_width_cm=UnitCm(top_coverage_cm)
+                ),
+                FramePart(
+                    inner_length_cm=UnitCm(left_id_cm),
+                    outer_length_cm=UnitCm(left_od_cm),
+                    inlay_width_cm=UnitCm(left_inlay_cm),
+                    coverage_width_cm=UnitCm(left_coverage_cm)
+                )
+            ]
+        )
+        return parts_list
 
     def plot(
             self,
