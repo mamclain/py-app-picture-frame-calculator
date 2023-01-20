@@ -5,7 +5,7 @@ a class to hold a list of coordinates
 from dataclasses import dataclass
 from typing import List
 
-from .coordinate import Coordinate
+from painting.dataclasses.coordinate import Coordinate
 
 
 @dataclass

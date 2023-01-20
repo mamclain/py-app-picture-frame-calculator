@@ -4,8 +4,8 @@ a class to hold unit conversion functions
 import math
 from fractions import Fraction
 
-from ..enums.rounding_mode import RoundingMode
-from ..enums.rounding_units import RoundingUnits
+from painting.enums.rounding_mode import RoundingMode
+from painting.enums.rounding_units import RoundingUnits
 
 
 def in_to_cm(inches: float) -> float:

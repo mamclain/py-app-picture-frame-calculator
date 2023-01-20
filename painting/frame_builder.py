@@ -3,13 +3,13 @@ a class to build a frame for a painting
 """
 from matplotlib import pyplot as plt
 
-from .dataclasses.coordinate import Coordinate
-from .dataclasses.coordinate_list import CoordinateList
-from .dataclasses.frame_layout import FrameLayout
-from .dataclasses.frame_size import FrameSize
-from .dataclasses.painting_information import PaintingInformation
-from .enums.frame_coordinate import FrameCoordinate
-from .mathematics.units import (
+from painting.dataclasses.coordinate import Coordinate
+from painting.dataclasses.coordinate_list import CoordinateList
+from painting.dataclasses.frame_layout import FrameLayout
+from painting.dataclasses.frame_size import FrameSize
+from painting.dataclasses.painting_information import PaintingInformation
+from painting.enums.frame_coordinate import FrameCoordinate
+from painting.mathematics.units import (
     cm_to_in,
     in_to_tape_measure
 )

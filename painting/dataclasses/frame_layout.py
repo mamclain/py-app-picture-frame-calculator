@@ -3,7 +3,7 @@ a class to hold the layout of a panting frame
 """
 from dataclasses import dataclass
 
-from .coordinate_list import CoordinateList
+from painting.dataclasses.coordinate_list import CoordinateList
 
 
 @dataclass
