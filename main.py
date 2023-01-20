@@ -37,8 +37,9 @@ def main():
     }
 
     painting = pictures["ruby"]
-
     frame = FrameBuilder(painting=painting)
+    frame.calculate_build_dimensions()
+    
     frame.plot()
 
 

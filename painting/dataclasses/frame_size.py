@@ -4,7 +4,7 @@ a dataclass to hold the size of a painting frame wood
 
 from dataclasses import dataclass
 
-from ..units import in_to_cm
+from ..mathematics.units import in_to_cm
 
 
 @dataclass
