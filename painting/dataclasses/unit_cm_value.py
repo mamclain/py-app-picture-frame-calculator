@@ -21,6 +21,14 @@ class UnitCm:
     value_cm: float
 
     @property
+    def value_cm_round(self) -> float:
+        """
+        Get the value rounded to the nearest .01mm
+        :return: the rounded value
+        """
+        return round(self.value_cm, 2)
+
+    @property
     def value_in(self) -> float:
         """
         Return the value in inches

@@ -81,3 +81,17 @@ class CoordinateList:
         :return: the maximum y value
         """
         return max(self.ys)
+
+    @property
+    def width(self) -> float:
+        """ get the width of the list of coordinates
+        :return: the width of the list of coordinates
+        """
+        return self.x_max - self.x_min
+
+    @property
+    def height(self) -> float:
+        """ get the height of the list of coordinates
+        :return: the height of the list of coordinates
+        """
+        return self.y_max - self.y_min
