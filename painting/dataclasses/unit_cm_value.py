@@ -21,12 +21,20 @@ class UnitCm:
     value_cm: float
 
     @property
-    def value_cm_round(self) -> float:
+    def value_cm_round(self, round_by=2) -> float:
         """
         Get the value rounded to the nearest .01mm
         :return: the rounded value
         """
-        return round(self.value_cm, 2)
+        return round(self.value_cm, round_by)
+
+    @property
+    def value_in_round(self, round_by=4) -> float:
+        """
+        Get the value rounded to the nearest .01mm
+        :return: the rounded value
+        """
+        return round(self.value_in, round_by)
 
     @property
     def value_in(self) -> float:

@@ -19,6 +19,7 @@ from painting.dataclasses.paper_dimensions import PaperDimensions
 from painting.dataclasses.unit_cm_value import UnitCm
 from painting.enums.frame_coordinate import FrameCoordinate
 from painting.enums.frame_index import FrameIndex
+from painting.enums.text_unit_mode import TextUnitMode
 from painting.mathematics.units import cm_to_in
 
 
@@ -260,19 +261,21 @@ class FrameBuilder(object):
         return parts_list
 
     @staticmethod
-    def _draw_bottom_dimension(
+    def _draw_od_bottom_dimension(
             dwg: svgwrite.Drawing,
-            left_xy: Tuple[float, float],
-            right_xy: Tuple[float, float],
+            x1_xy: Tuple[float, float],
+            x2_xy: Tuple[float, float],
             frame_part: FramePart,
             ruler_offset: float,
             svg_dim_stroke_width: float,
-            font_size: str
+            font_size: str,
+            text_unit_mode: TextUnitMode
+
     ):
-        """ draw the bottom dimension
+        """ draw the od bottom dimension
         :param dwg: the drawing to draw on
-        :param left_xy: the left x,y coordinate
-        :param right_xy: the right x,y coordinate
+        :param x1_xy: the left x,y coordinate
+        :param x2_xy: the right x,y coordinate
         :param frame_part: the frame part to draw
         :param ruler_offset: the ruler offset
         :param svg_dim_stroke_width: the stroke width
@@ -281,8 +284,8 @@ class FrameBuilder(object):
         # left end cap line
         dwg.add(
             dwg.line(
-                (left_xy[0], left_xy[1] - ruler_offset),
-                (left_xy[0], left_xy[1] - ruler_offset * 2),
+                (x1_xy[0], x1_xy[1] - ruler_offset),
+                (x1_xy[0], x1_xy[1] - ruler_offset * 2),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
@@ -290,8 +293,8 @@ class FrameBuilder(object):
         # right end cap line
         dwg.add(
             dwg.line(
-                (right_xy[0], right_xy[1] - ruler_offset),
-                (right_xy[0], right_xy[1] - ruler_offset * 2),
+                (x2_xy[0], x2_xy[1] - ruler_offset),
+                (x2_xy[0], x2_xy[1] - ruler_offset * 2),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
@@ -299,17 +302,26 @@ class FrameBuilder(object):
         # the line
         dwg.add(
             dwg.line(
-                (left_xy[0], left_xy[1] - ruler_offset - ruler_offset / 2),
-                (right_xy[0], right_xy[1] - ruler_offset - ruler_offset / 2),
+                (x1_xy[0], x1_xy[1] - ruler_offset - ruler_offset / 2),
+                (x2_xy[0], x2_xy[1] - ruler_offset - ruler_offset / 2),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
         )
 
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.outer_length.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.outer_length.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.outer_length.value_tape
+        else:
+            output_text = frame_part.outer_length.value_cm_round
+
         # draw the bottom text in inches
         # note the font_size is not directly related to the viewbox. best result so far is in percent
         bottom_text = dwg.text(
-            frame_part.outer_length.value_cm_round,
+            output_text,
             insert=(0, 0),
             text_anchor="middle",
             font_size=font_size,
@@ -318,26 +330,27 @@ class FrameBuilder(object):
         bottom_text.scale(1, -1)
         # we also need to translate it to the correct location which is adding rather than subtracting
         bottom_text.translate(
-            (left_xy[0] + right_xy[0]) / 2,
-            left_xy[1] + ruler_offset * 3 + ruler_offset / 2
+            (x1_xy[0] + x2_xy[0]) / 2,
+            x1_xy[1] + ruler_offset * 3 + ruler_offset / 2
         )
         # we cant chain transforms so i had to do a dedicated object here
         dwg.add(bottom_text)
 
     @staticmethod
-    def _draw_side_dimension(
+    def _draw_od_side_dimension(
             dwg: svgwrite.Drawing,
-            top_xy: Tuple[float, float],
-            bottom_xy: Tuple[float, float],
+            x1_xy: Tuple[float, float],
+            x2_xy: Tuple[float, float],
             frame_part: FramePart,
             ruler_offset: float,
             svg_dim_stroke_width: float,
-            font_size: str
+            font_size: str,
+            text_unit_mode: TextUnitMode
     ):
-        """ draw the bottom dimension
+        """ draw the od side dimension
         :param dwg: the drawing to draw on
-        :param top_xy: the top x,y coordinate
-        :param bottom_xy: the bottom x,y coordinate
+        :param x1_xy: the top x,y coordinate
+        :param x2_xy: the bottom x,y coordinate
         :param frame_part: the frame part to draw
         :param ruler_offset: the ruler offset
         :param svg_dim_stroke_width: the stroke width
@@ -346,8 +359,8 @@ class FrameBuilder(object):
         # top end cap line
         dwg.add(
             dwg.line(
-                (top_xy[0] + ruler_offset, top_xy[1]),
-                (top_xy[0] + ruler_offset * 2, top_xy[1]),
+                (x1_xy[0] + ruler_offset, x1_xy[1]),
+                (x1_xy[0] + ruler_offset * 2, x1_xy[1]),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
@@ -355,8 +368,8 @@ class FrameBuilder(object):
         # bottom end cap line
         dwg.add(
             dwg.line(
-                (bottom_xy[0] + ruler_offset, bottom_xy[1]),
-                (bottom_xy[0] + ruler_offset * 2, bottom_xy[1]),
+                (x2_xy[0] + ruler_offset, x2_xy[1]),
+                (x2_xy[0] + ruler_offset * 2, x2_xy[1]),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
@@ -364,17 +377,26 @@ class FrameBuilder(object):
         # the line
         dwg.add(
             dwg.line(
-                (top_xy[0] + ruler_offset + ruler_offset / 2, top_xy[1]),
-                (bottom_xy[0] + ruler_offset + ruler_offset / 2, bottom_xy[1]),
+                (x1_xy[0] + ruler_offset + ruler_offset / 2, x1_xy[1]),
+                (x2_xy[0] + ruler_offset + ruler_offset / 2, x2_xy[1]),
                 stroke="black",
                 stroke_width=svg_dim_stroke_width
             )
         )
 
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.outer_length.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.outer_length.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.outer_length.value_tape
+        else:
+            output_text = frame_part.outer_length.value_cm_round
+
         # draw the side text in inches
         # note the font_size is not directly related to the viewbox. best result so far is in percent
         side_text = dwg.text(
-            frame_part.outer_length.value_cm_round,
+            output_text,
             insert=(0, 0),
             text_anchor="start",
             font_size=font_size,
@@ -383,12 +405,166 @@ class FrameBuilder(object):
         side_text.scale(1, -1)
         # we also need to translate it to the correct location which is adding rather than subtracting
         side_text.translate(
-            (top_xy[0] + ruler_offset * 2 + ruler_offset / 2),
-            -(bottom_xy[1] - top_xy[1]) / 2
+            (x1_xy[0] + ruler_offset * 2 + ruler_offset / 2),
+            -(x2_xy[1] - x1_xy[1]) / 2
         )
         side_text.rotate(90)
         # we cant chain transforms so i had to do a dedicated object here
         dwg.add(side_text)
+
+    @staticmethod
+    def _draw_id_side_dimension(
+            dwg: svgwrite.Drawing,
+            x1_xy: Tuple[float, float],
+            x2_xy: Tuple[float, float],
+            side_length: UnitCm,
+            ruler_offset: float,
+            svg_dim_stroke_width: float,
+            font_size: str,
+            text_unit_mode: TextUnitMode
+    ):
+        """ draw the max painting dimension
+        :param dwg: the drawing to draw on
+        :param x1_xy: the top x,y coordinate
+        :param x2_xy: the bottom x,y coordinate
+        :param side_length: the length of the side
+        :param ruler_offset: the ruler offset
+        :param svg_dim_stroke_width: the stroke width
+        """
+
+        # top end cap line
+        dwg.add(
+            dwg.line(
+                (x1_xy[0] - ruler_offset / 4, x1_xy[1]),
+                (x1_xy[0] - ruler_offset / 4 - ruler_offset, x1_xy[1]),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+        # bottom end cap line
+        dwg.add(
+            dwg.line(
+                (x2_xy[0] - ruler_offset / 4, x2_xy[1]),
+                (x2_xy[0] - ruler_offset / 4 - ruler_offset, x2_xy[1]),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+        # the line
+        dwg.add(
+            dwg.line(
+                (x1_xy[0] - ruler_offset / 4 - ruler_offset / 2, x1_xy[1]),
+                (x2_xy[0] - ruler_offset / 4 - ruler_offset / 2, x2_xy[1]),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = side_length.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = side_length.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = side_length.value_tape
+        else:
+            output_text = side_length.value_cm_round
+
+        # draw the side text in inches
+        # note the font_size is not directly related to the viewbox. best result so far is in percent
+        side_text = dwg.text(
+            output_text,
+            insert=(0, 0),
+            text_anchor="start",
+            font_size=font_size,
+            fill="blue"
+        )
+        # the text is drawn in normal rotation space, so we need to flip it back right side up
+        side_text.scale(1, -1)
+        # we also need to translate it to the correct location which is adding rather than subtracting
+        side_text.translate(
+            (x1_xy[0] - ruler_offset - ruler_offset / 2),
+            -(x2_xy[1] - x1_xy[1]) / 2
+        )
+        side_text.rotate(-90)
+        # we cant chain transforms so i had to do a dedicated object here
+        dwg.add(side_text)
+
+    @staticmethod
+    def _draw_id_top_dimension(
+            dwg: svgwrite.Drawing,
+            x1_xy: Tuple[float, float],
+            x2_xy: Tuple[float, float],
+            side_length: UnitCm,
+            ruler_offset: float,
+            svg_dim_stroke_width: float,
+            font_size: str,
+            text_unit_mode: TextUnitMode
+
+    ):
+        """ draw the id top dimension
+        :param dwg: the drawing to draw on
+        :param x1_xy: the left x,y coordinate
+        :param x2_xy: the right x,y coordinate
+        :param side_length: the side length to draw
+        :param ruler_offset: the ruler offset
+        :param svg_dim_stroke_width: the stroke width
+        """
+
+        # left end cap line
+        dwg.add(
+            dwg.line(
+                (x1_xy[0], x1_xy[1] + ruler_offset / 4),
+                (x1_xy[0], x1_xy[1] + ruler_offset / 4 + ruler_offset),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+        # right end cap line
+        dwg.add(
+            dwg.line(
+                (x2_xy[0], x2_xy[1] + ruler_offset / 4),
+                (x2_xy[0], x2_xy[1] + ruler_offset / 4 + ruler_offset),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+        # the line
+        dwg.add(
+            dwg.line(
+                (x1_xy[0], x1_xy[1] + ruler_offset / 4 + ruler_offset / 2),
+                (x2_xy[0], x2_xy[1] + ruler_offset / 4 + ruler_offset / 2),
+                stroke="blue",
+                stroke_width=svg_dim_stroke_width
+            )
+        )
+
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = side_length.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = side_length.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = side_length.value_tape
+        else:
+            output_text = side_length.value_cm_round
+
+        # draw the bottom text in inches
+        # note the font_size is not directly related to the viewbox. best result so far is in percent
+        bottom_text = dwg.text(
+            output_text,
+            insert=(0, 0),
+            text_anchor="middle",
+            font_size=font_size,
+            fill="blue"
+        )
+        # the text is drawn in normal rotation space so we need to flip it back right side up
+        bottom_text.scale(1, -1)
+        # we also need to translate it to the correct location which is adding rather than subtracting
+        bottom_text.translate(
+            (x1_xy[0] + x2_xy[0]) / 2,
+            -(x1_xy[1] + ruler_offset / 2 + ruler_offset / 2)
+        )
+        # we cant chain transforms so i had to do a dedicated object here
+        dwg.add(bottom_text)
 
     @staticmethod
     def _draw_bottom_inlay_dimension(
@@ -396,18 +572,17 @@ class FrameBuilder(object):
             xy1: Tuple[float, float],
             xy2: Tuple[float, float],
             xy3: Tuple[float, float],
-            xy4: Tuple[float, float],
             frame_part: FramePart,
             ruler_offset: float,
             svg_dim_stroke_width: float,
-            font_size: str
+            font_size: str,
+            text_unit_mode: TextUnitMode
     ):
         """ draw the bottom dimension
         :param dwg: the drawing to draw on
         :param xy1: the xy 1 x,y coordinate
         :param xy2: the xy 2 x,y coordinate
         :param xy3: the xy 3 x,y coordinate
-        :param xy4: the xy 4 x,y coordinate
         :param frame_part: the frame part to draw
         :param ruler_offset: the ruler offset
         :param svg_dim_stroke_width: the stroke width
@@ -453,10 +628,20 @@ class FrameBuilder(object):
                 stroke_width=svg_dim_stroke_width / 2
             )
         )
+
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.inlay_width.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.inlay_width.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.inlay_width.value_tape
+        else:
+            output_text = frame_part.inlay_width.value_cm_round
+
         # draw the side text in inches
         # note the font_size is not directly related to the viewbox. best result so far is in percent
         side_text = dwg.text(
-            frame_part.inlay_width.value_cm_round,
+            output_text,
             insert=(0, 0),
             text_anchor="middle",
             font_size=font_size,
@@ -478,18 +663,17 @@ class FrameBuilder(object):
             xy1: Tuple[float, float],
             xy2: Tuple[float, float],
             xy3: Tuple[float, float],
-            xy4: Tuple[float, float],
             frame_part: FramePart,
             ruler_offset: float,
             svg_dim_stroke_width: float,
-            font_size: str
+            font_size: str,
+            text_unit_mode: TextUnitMode
     ):
         """ draw the bottom dimension
         :param dwg: the drawing to draw on
         :param xy1: the xy 1 x,y coordinate
         :param xy2: the xy 2 x,y coordinate
         :param xy3: the xy 3 x,y coordinate
-        :param xy4: the xy 4 x,y coordinate
         :param frame_part: the frame part to draw
         :param ruler_offset: the ruler offset
         :param svg_dim_stroke_width: the stroke width
@@ -535,10 +719,20 @@ class FrameBuilder(object):
                 stroke_width=svg_dim_stroke_width / 2
             )
         )
+
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.inlay_width.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.inlay_width.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.inlay_width.value_tape
+        else:
+            output_text = frame_part.inlay_width.value_cm_round
+
         # draw the side text in inches
         # note the font_size is not directly related to the viewbox. best result so far is in percent
         side_text = dwg.text(
-            frame_part.inlay_width.value_cm_round,
+            output_text,
             insert=(0, 0),
             text_anchor="middle",
             font_size=font_size,
@@ -560,18 +754,17 @@ class FrameBuilder(object):
             xy1: Tuple[float, float],
             xy2: Tuple[float, float],
             xy3: Tuple[float, float],
-            xy4: Tuple[float, float],
             frame_part: FramePart,
             ruler_offset: float,
             svg_dim_stroke_width: float,
-            font_size: str
+            font_size: str,
+            text_unit_mode: TextUnitMode
     ):
         """ draw the right dimension
         :param dwg: the drawing to draw on
         :param xy1: the xy 1 x,y coordinate
         :param xy2: the xy 2 x,y coordinate
         :param xy3: the xy 3 x,y coordinate
-        :param xy4: the xy 4 x,y coordinate
         :param frame_part: the frame part to draw
         :param ruler_offset: the ruler offset
         :param svg_dim_stroke_width: the stroke width
@@ -618,10 +811,19 @@ class FrameBuilder(object):
             )
         )
 
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.inlay_width.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.inlay_width.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.inlay_width.value_tape
+        else:
+            output_text = frame_part.inlay_width.value_cm_round
+
         # draw the side text in inches
         # note the font_size is not directly related to the viewbox. best result so far is in percent
         side_text = dwg.text(
-            frame_part.inlay_width.value_cm_round,
+            output_text,
             insert=(0, 0),
             text_anchor="end",
             font_size=font_size,
@@ -637,14 +839,134 @@ class FrameBuilder(object):
         # we cant chain transforms so i had to do a dedicated object here
         dwg.add(side_text)
 
+    @staticmethod
+    def _draw_left_inlay_dimension(
+            dwg: svgwrite.Drawing,
+            xy1: Tuple[float, float],
+            xy2: Tuple[float, float],
+            xy3: Tuple[float, float],
+            frame_part: FramePart,
+            ruler_offset: float,
+            svg_dim_stroke_width: float,
+            font_size: str,
+            text_unit_mode: TextUnitMode
+    ):
+        """ draw the left dimension
+        :param dwg: the drawing to draw on
+        :param xy1: the xy 1 x,y coordinate
+        :param xy2: the xy 2 x,y coordinate
+        :param xy3: the xy 3 x,y coordinate
+        :param frame_part: the frame part to draw
+        :param ruler_offset: the ruler offset
+        :param svg_dim_stroke_width: the stroke width
+        """
+
+        y_mid_point = (xy1[1] + xy2[1]) / 2
+
+        # draw arrow top side
+        dwg.add(
+            dwg.line(
+                (xy1[0], y_mid_point),
+                (xy1[0] + ruler_offset / 2, y_mid_point - ruler_offset / 2),
+                stroke="red",
+                stroke_width=svg_dim_stroke_width / 2
+            )
+        )
+        # draw arrow bottom side
+        dwg.add(
+            dwg.line(
+                (xy1[0], y_mid_point),
+                (xy1[0] + ruler_offset / 2, y_mid_point + ruler_offset / 2),
+                stroke="red",
+                stroke_width=svg_dim_stroke_width / 2
+            )
+        )
+
+        # draw outbound line
+        dwg.add(
+            dwg.line(
+                (xy1[0], y_mid_point),
+                (xy3[0], y_mid_point),
+                stroke="red",
+                stroke_width=svg_dim_stroke_width / 2
+            )
+        )
+
+        # draw hash edge
+        dwg.add(
+            dwg.line(
+                (xy3[0], y_mid_point - ruler_offset / 2),
+                (xy3[0], y_mid_point + ruler_offset / 2),
+                stroke="red",
+                stroke_width=svg_dim_stroke_width / 2
+            )
+        )
+
+        if text_unit_mode == TextUnitMode.CM:
+            output_text = frame_part.inlay_width.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            output_text = frame_part.inlay_width.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            output_text = frame_part.inlay_width.value_tape
+        else:
+            output_text = frame_part.inlay_width.value_cm_round
+
+        # draw the side text in inches
+        # note the font_size is not directly related to the viewbox. best result so far is in percent
+        side_text = dwg.text(
+            output_text,
+            insert=(0, 0),
+            text_anchor="start",
+            font_size=font_size,
+            fill="red"
+        )
+        # the text is drawn in normal rotation space, so we need to flip it back right side up
+        side_text.scale(1, -1)
+        # we also need to translate it to the correct location which is adding rather than subtracting
+        side_text.translate(
+            xy3[0] + ruler_offset / 4,
+            -y_mid_point + ruler_offset / 3
+        )
+        # we cant chain transforms so i had to do a dedicated object here
+        dwg.add(side_text)
+
+    @staticmethod
+    def _draw_text(
+            dwg: svgwrite.Drawing,
+            x: float,
+            y: float,
+            text: str,
+            font_size: str,
+            color: str,
+            text_anchor: str,
+    ):
+        draw_text = dwg.text(
+            text,
+            insert=(0, 0),
+            text_anchor=text_anchor,
+            font_size=font_size,
+            fill=color
+        )
+        # the text is drawn in normal rotation space so we need to flip it back right side up
+        draw_text.scale(1, -1)
+        # we also need to translate it to the correct location which is adding rather than subtracting
+        draw_text.translate(
+            x,
+            -y
+        )
+        # we cant chain transforms so i had to do a dedicated object here
+        dwg.add(draw_text)
+
     def draw_schematic(
             self,
             paper_size: PaperDimensions = PaperDimensions(8, 10),
+            text_unit_mode: TextUnitMode = TextUnitMode.CM,
             at: Coordinate = Coordinate(x=0, y=0),
     ):
         """
         Draw a schematic of the frame layout
         :param paper_size: the size of the paper to draw on
+        :param text_unit_mode: the unit mode to use for text
         :param at: the coordinate to draw the schematic at
         :return: 
         """
@@ -702,6 +1024,30 @@ class FrameBuilder(object):
             inlay_coordinates[FrameCoordinate.TOP_LEFT]
         ]
 
+        interior_width = UnitCm(
+            frame_to_plot.painting_overlap_boundary[FrameCoordinate.BOTTOM_RIGHT].distance(
+                frame_to_plot.painting_overlap_boundary[FrameCoordinate.BOTTOM_LEFT]
+            )
+        )
+
+        interior_height = UnitCm(
+            frame_to_plot.painting_overlap_boundary[FrameCoordinate.BOTTOM_RIGHT].distance(
+                frame_to_plot.painting_overlap_boundary[FrameCoordinate.TOP_RIGHT]
+            )
+        )
+
+        painting_max_height = UnitCm(
+            frame_to_plot.painting_max_boundary[FrameCoordinate.TOP_LEFT].distance(
+                frame_to_plot.painting_max_boundary[FrameCoordinate.BOTTOM_LEFT]
+            )
+        )
+
+        painting_max_width = UnitCm(
+            frame_to_plot.painting_max_boundary[FrameCoordinate.TOP_LEFT].distance(
+                frame_to_plot.painting_max_boundary[FrameCoordinate.TOP_RIGHT]
+            )
+        )
+
         exterior_x_min_in = cm_to_in(frame_to_plot.frame_exterior_boundary.x_min)
         exterior_y_min_in = cm_to_in(frame_to_plot.frame_exterior_boundary.y_min)
         exterior_x_max_in = cm_to_in(frame_to_plot.frame_exterior_boundary.x_max)
@@ -717,6 +1063,9 @@ class FrameBuilder(object):
         svg_view_y_min_pad_in = exterior_y_min_in - svg_offset
         svg_view_x_max_pad_in = exterior_x_max_in + svg_offset * 2
         svg_view_y_max_pad_in = exterior_y_max_in + svg_offset * 2
+
+        svg_width_in = svg_view_x_max_pad_in - svg_view_x_min_pad_in
+        svg_height_in = svg_view_y_max_pad_in - svg_view_y_min_pad_in
 
         # create the svg object
         dwg = svgwrite.Drawing(
@@ -737,28 +1086,30 @@ class FrameBuilder(object):
         # draw our bottom frame
         dwg.add(dwg.polygon(bottom_vertex, fill='lightblue', stroke='black', stroke_width=svg_stroke_width))
 
-        self._draw_bottom_dimension(
+        self._draw_od_bottom_dimension(
             dwg=dwg,
             frame_part=parts.parts[FrameIndex.BOTTOM],
-            left_xy=bottom_vertex[0],
-            right_xy=bottom_vertex[1],
+            x1_xy=bottom_vertex[0],
+            x2_xy=bottom_vertex[1],
             ruler_offset=ruler_offset,
             svg_dim_stroke_width=svg_dim_stroke_width,
-            font_size=font_size
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
         )
 
         # draw our right frame
         dwg.add(dwg.polygon(right_vertex, fill='green', stroke='black', stroke_width=svg_stroke_width))
 
         # draw right side dimensions
-        self._draw_side_dimension(
+        self._draw_od_side_dimension(
             dwg=dwg,
             frame_part=parts.parts[FrameIndex.RIGHT],
-            top_xy=right_vertex[0],
-            bottom_xy=right_vertex[1],
+            x1_xy=right_vertex[0],
+            x2_xy=right_vertex[1],
             ruler_offset=ruler_offset,
             svg_dim_stroke_width=svg_dim_stroke_width,
-            font_size=font_size
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
         )
 
         # draw top
@@ -777,10 +1128,10 @@ class FrameBuilder(object):
             xy1=inlay_vertex[0],
             xy2=inlay_vertex[1],
             xy3=bottom_vertex[2],
-            xy4=bottom_vertex[3],
             ruler_offset=ruler_offset,
             svg_dim_stroke_width=svg_dim_stroke_width,
-            font_size=font_size
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
         )
 
         # draw the top inlay dimension
@@ -790,10 +1141,10 @@ class FrameBuilder(object):
             xy1=inlay_vertex[3],
             xy2=inlay_vertex[2],
             xy3=top_vertex[2],
-            xy4=top_vertex[3],
             ruler_offset=ruler_offset,
             svg_dim_stroke_width=svg_dim_stroke_width,
-            font_size=font_size
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
         )
 
         # draw the right side inlay dimension
@@ -803,10 +1154,96 @@ class FrameBuilder(object):
             xy1=inlay_vertex[2],
             xy2=inlay_vertex[1],
             xy3=right_vertex[2],
-            xy4=right_vertex[3],
             ruler_offset=ruler_offset,
             svg_dim_stroke_width=svg_dim_stroke_width,
-            font_size=font_size
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
+        )
+
+        # draw the left side inlay dimension
+        self._draw_left_inlay_dimension(
+            dwg=dwg,
+            frame_part=parts.parts[FrameIndex.LEFT],
+            xy1=inlay_vertex[3],
+            xy2=inlay_vertex[0],
+            xy3=left_vertex[2],
+            ruler_offset=ruler_offset,
+            svg_dim_stroke_width=svg_dim_stroke_width,
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
+        )
+
+        # draw painting max side dimensions
+        self._draw_id_side_dimension(
+            dwg=dwg,
+            side_length=painting_max_height,
+            x1_xy=inlay_vertex[0],
+            x2_xy=inlay_vertex[3],
+            ruler_offset=ruler_offset,
+            svg_dim_stroke_width=svg_dim_stroke_width,
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
+        )
+
+        # draw the painting max top dimension
+        self._draw_id_top_dimension(
+            dwg=dwg,
+            side_length=painting_max_width,
+            x1_xy=inlay_vertex[3],
+            x2_xy=inlay_vertex[2],
+            ruler_offset=ruler_offset,
+            svg_dim_stroke_width=svg_dim_stroke_width,
+            font_size=font_size,
+            text_unit_mode=text_unit_mode
+        )
+
+        # draw the painting name
+        self._draw_text(
+            dwg=dwg,
+            x=0,
+            y=svg_height_in - svg_offset * 3 + .5,
+            text=f"Name: {self.painting.name}",
+            font_size=font_size,
+            color='orange',
+            text_anchor='start',
+        )
+
+        if text_unit_mode == TextUnitMode.CM:
+            id_width_text = interior_width.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            id_width_text = interior_width.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            id_width_text = interior_width.value_tape
+        else:
+            id_width_text = interior_width.value_cm_round
+
+        if text_unit_mode == TextUnitMode.CM:
+            id_height_text = interior_height.value_cm_round
+        elif text_unit_mode == TextUnitMode.INCH:
+            id_height_text = interior_height.value_in_round
+        elif text_unit_mode == TextUnitMode.TAPE:
+            id_height_text = interior_height.value_tape
+        else:
+            id_height_text = interior_height.value_cm_round
+
+        self._draw_text(
+            dwg=dwg,
+            x=(svg_width_in - svg_offset * 3) / 2,
+            y=(svg_height_in - svg_offset * 3) / 2 - .5,
+            text=f"ID Width: {id_width_text}",
+            font_size=font_size,
+            color='orange',
+            text_anchor='middle',
+        )
+
+        self._draw_text(
+            dwg=dwg,
+            x=(svg_width_in - svg_offset * 3) / 2,
+            y=(svg_height_in - svg_offset * 3) / 2 + .5,
+            text=f"ID Height: {id_height_text}",
+            font_size=font_size,
+            color='orange',
+            text_anchor='middle',
         )
 
         svg_file = io.StringIO()

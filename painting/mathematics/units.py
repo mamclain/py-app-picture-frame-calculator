@@ -50,5 +50,7 @@ def in_to_tape_measure(
     limited_frac_part = Fraction(frac_part).limit_denominator(round_unit)
     if limited_frac_part == 0:
         return "{}".format(int(int_part))
+    elif int_part == 0:
+        return "{}".format(limited_frac_part)
     else:
         return "{} {}".format(int(int_part), limited_frac_part)
